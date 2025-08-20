@@ -1,0 +1,18 @@
+model_name,model_params,accuracy,balanced_accuracy,precision,recall,f1,average_precision
+GradientBoostingClassifier,"{'learning_rate': 0.01, 'max_depth': 3, 'n_estimators': 200, 'subsample': 0.8}",0.9411764705882353,0.9583333333333333,0.8333333333333334,1.0,0.9090909090909091,0.7100000000000001
+MLPClassifier,"{'activation': 'logistic', 'alpha': 0.01, 'hidden_layer_sizes': (100, 50), 'learning_rate_init': 0.1, 'solver': 'lbfgs'}",0.9411764705882353,0.9583333333333333,0.8333333333333334,1.0,0.9090909090909091,0.7100000000000001
+RandomForestClassifier,"{'bootstrap': True, 'max_depth': None, 'n_estimators': 100}",0.9411764705882353,0.9583333333333333,0.8333333333333334,1.0,0.9090909090909091,0.71
+DecisionTreeClassifier,"{'max_depth': None, 'min_samples_leaf': 1, 'min_samples_split': 5}",0.9411764705882353,0.9583333333333333,0.8333333333333334,1.0,0.9090909090909091,0.8333333333333334
+KNeighborsClassifier,"{'n_neighbors': 2, 'p': 2, 'weights': 'uniform'}",0.8823529411764706,0.9166666666666667,0.7142857142857143,1.0,0.8333333333333334,0.6952380952380952
+KNeighborsClassifier,"{'n_neighbors': 2, 'p': 2, 'weights': 'distance'}",0.8823529411764706,0.8583333333333334,0.8,0.8,0.8,0.7433333333333333
+GradientBoostingClassifier,"{'learning_rate': 0.1, 'max_depth': 7, 'n_estimators': 500, 'subsample': 0.9}",0.8823529411764706,0.8583333333333334,0.8,0.8,0.8,0.81
+LogisticRegression,"{'C': 0.001, 'penalty': 'l2', 'solver': 'liblinear'}",0.8823529411764706,0.8583333333333334,0.8,0.8,0.8,0.7100000000000001
+RandomForestClassifier,"{'bootstrap': False, 'max_depth': 2, 'n_estimators': 20}",0.8823529411764706,0.8583333333333334,0.8,0.8,0.8,0.7861904761904761
+KNeighborsClassifier,"{'n_neighbors': 1, 'p': 2, 'weights': 'uniform'}",0.8823529411764706,0.8583333333333334,0.8,0.8,0.8,0.6988235294117648
+SVC,"{'C': 10, 'degree': 2, 'gamma': 'scale', 'kernel': 'sigmoid'}",0.8235294117647058,0.7583333333333333,0.75,0.6,0.6666666666666666,0.5676470588235294
+MLPClassifier,"{'activation': 'logistic', 'alpha': 0.001, 'hidden_layer_sizes': (100, 100), 'learning_rate_init': 0.1, 'solver': 'adam'}",0.8235294117647058,0.7,1.0,0.4,0.5714285714285714,0.8714285714285714
+LogisticRegression,"{'C': 0.001, 'penalty': 'l1', 'solver': 'liblinear'}",0.29411764705882354,0.5,0.29411764705882354,1.0,0.45454545454545453,0.29411764705882354
+GaussianProcessClassifier,{'kernel': DotProduct(sigma_0=1)},0.7058823529411765,0.5583333333333333,0.5,0.2,0.2857142857142857,0.5592857142857143
+RidgeClassifier,"{'alpha': 0.01, 'fit_intercept': True}",0.7058823529411765,0.5583333333333333,0.5,0.2,0.2857142857142857,0.33529411764705885
+RidgeClassifier,"{'alpha': 0.0001, 'fit_intercept': True}",0.6470588235294118,0.5166666666666667,0.3333333333333333,0.2,0.25,0.3019607843137255
+GaussianProcessClassifier,{'kernel': RBF(length_scale=1)},0.6470588235294118,0.4583333333333333,0.0,0.0,0.0,0.5926190476190476
