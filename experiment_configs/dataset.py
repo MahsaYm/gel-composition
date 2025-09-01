@@ -82,28 +82,33 @@ IDEAL_TARGETS: dict[str, Target] = {
         ideal_max=180,
         ideal_min=0,
         unacceptable_max=900,
-        unacceptable_min=0,),
+        unacceptable_min=0,
+        importance=1),
     'Uniformity': Target(
         ideal_max=0,
         ideal_min=0,
         unacceptable_max=7.5,
-        unacceptable_min=0),
+        unacceptable_min=0,
+        importance=1),
     'Tanδ': Target(
         ideal_max=0.1,
         ideal_min=0,
         unacceptable_max=1,
-        unacceptable_min=0),
+        unacceptable_min=0,
+        importance=1),
     'Recovery': Target(
         ideal_max=50,
         ideal_min=30,
         unacceptable_max=100,
-        unacceptable_min=0),
+        unacceptable_min=0,
+        importance=1),
     'Leakage': Target(
         ideal_max=.3,
         ideal_min=0,
         unacceptable_max=1,
         unacceptable_min=0,
-        importance=50)
+        importance=1),
+
 }
 
 
@@ -111,6 +116,6 @@ GEL_BOUNDS = {
     'Methocel A4C': (120, 360),
     'Methocel A4M': (240, 600),
     'Ac-Di-Sol': (180, 360),
-    'Pressure': (5, 50),
-    'Speed': (4, 6)
+    'Pressure': (25, 50),
+    'Speed': (4, 7)
 }

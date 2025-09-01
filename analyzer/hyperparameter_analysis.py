@@ -1,4 +1,6 @@
 # %load_ext cuml.accel
+import os
+import pandas as pd
 from analyzer.plot_prediction_error import plot_prediction_error
 from analyzer.hyperparameter_summary import best_hyperparameter_experiment_summary
 from analyzer.hyperparameter_summary import visualize_full_performance_graphs
@@ -28,17 +30,19 @@ def run_all_nested_training(dataset: DatasetConfig,
 
     results = {}
     save_name = f'{dataset.target_column}/{dataset.dataset_types}-{dataset.input_columns}'
-
-    if dataset.target_column in CLASSIFICATION_TARGET_COLUMNS:
-        models = CLASSIFICATION_MODELS
+    if not visualize and os.path.exists(f'results/tables/{save_name}.csv'):
+        summary = pd.read_csv(f'results/tables/{save_name}.csv')
     else:
-        models = REGRESSION_MODELS
+        if dataset.target_column in CLASSIFICATION_TARGET_COLUMNS:
+            models = CLASSIFICATION_MODELS
+        else:
+            models = REGRESSION_MODELS
 
-    for model in models:
-        result = run_nested_training(dataset, model)
-        results[model['ModelClass'].__name__] = result
+        for model in models:
+            result = run_nested_training(dataset, model)
+            results[model['ModelClass'].__name__] = result
 
-    summary = best_hyperparameter_experiment_summary(results, experiment_name=save_name)
+        summary = best_hyperparameter_experiment_summary(results, experiment_name=save_name)
 
     if visualize:
         dataset_name = f"{dataset.target_column}-{dataset.dataset_types}\n{dataset.input_columns}"

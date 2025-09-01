@@ -47,6 +47,11 @@ class Model:
         """Predict using the fitted model."""
 
         X, _ = self.ensure_numpy(X, None)
+
+        # Ensure X is 2D - reshape if it's 1D
+        if X.ndim == 1:
+            X = X.reshape(1, -1)
+
         X_scaled = self.X_scaler.transform(X)
         if not is_regressor(self.estimator):
             if hasattr(self.estimator, 'predict_proba'):

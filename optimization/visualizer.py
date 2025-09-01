@@ -6,9 +6,67 @@ from mpl_toolkits.mplot3d import Axes3D
 from models.model_trainer import Model
 from matplotlib.colors import Normalize
 from matplotlib.cm import get_cmap
-from optimization.grid_operation import create_range
+from optimization.grid_operation import create_range, create_range_centered_on_optimal
 from typing import cast
 from scipy.interpolate import RectBivariateSpline
+
+
+def composition_to_grid_indices_centered(optimal_gel_composition: np.ndarray, num_points: int) -> tuple[int, int, int]:
+    """
+    Convert optimal gel composition values to grid indices using centered ranges.
+
+    Args:
+        optimal_gel_composition: Array with [A4C, A4M, Ac-Di-Sol, ...] values
+        num_points: Number of grid points per dimension
+
+    Returns:
+        Tuple of (a4c_idx, a4m_idx, ac_disol_idx)
+    """
+    # Extract the first three components (A4C, A4M, Ac-Di-Sol)
+    a4c_value = optimal_gel_composition[0]
+    a4m_value = optimal_gel_composition[1]
+    ac_disol_value = optimal_gel_composition[2]
+
+    # Get parameter ranges centered on optimal values
+    a4c_range = create_range_centered_on_optimal(GEL_BOUNDS['Methocel A4C'], num_points, a4c_value)
+    a4m_range = create_range_centered_on_optimal(GEL_BOUNDS['Methocel A4M'], num_points, a4m_value)
+    ac_disol_range = create_range_centered_on_optimal(GEL_BOUNDS['Ac-Di-Sol'], num_points, ac_disol_value)
+
+    # Find closest indices (should be exact matches now)
+    a4c_idx = int(np.argmin(np.abs(a4c_range - a4c_value)))
+    a4m_idx = int(np.argmin(np.abs(a4m_range - a4m_value)))
+    ac_disol_idx = int(np.argmin(np.abs(ac_disol_range - ac_disol_value)))
+
+    return a4c_idx, a4m_idx, ac_disol_idx
+
+
+def composition_to_grid_indices(optimal_gel_composition: np.ndarray, num_points: int) -> tuple[int, int, int]:
+    """
+    Convert optimal gel composition values to grid indices.
+
+    Args:
+        optimal_gel_composition: Array with [A4C, A4M, Ac-Di-Sol, ...] values
+        num_points: Number of grid points per dimension
+
+    Returns:
+        Tuple of (a4c_idx, a4m_idx, ac_disol_idx)
+    """
+    # Extract the first three components (A4C, A4M, Ac-Di-Sol)
+    a4c_value = optimal_gel_composition[0]
+    a4m_value = optimal_gel_composition[1]
+    ac_disol_value = optimal_gel_composition[2]
+
+    # Get parameter ranges
+    a4c_range = create_range(GEL_BOUNDS['Methocel A4C'], num_points)
+    a4m_range = create_range(GEL_BOUNDS['Methocel A4M'], num_points)
+    ac_disol_range = create_range(GEL_BOUNDS['Ac-Di-Sol'], num_points)
+
+    # Find closest indices
+    a4c_idx = int(np.argmin(np.abs(a4c_range - a4c_value)))
+    a4m_idx = int(np.argmin(np.abs(a4m_range - a4m_value)))
+    ac_disol_idx = int(np.argmin(np.abs(ac_disol_range - ac_disol_value)))
+
+    return a4c_idx, a4m_idx, ac_disol_idx
 
 
 def create_voxel_colors_and_alpha(penalties: np.ndarray) -> tuple[np.ndarray, float, float]:
@@ -81,6 +139,7 @@ def create_smooth_contour_data(data: np.ndarray, x_range: np.ndarray, y_range: n
 
 def visualize_penalties(
     penalties: np.ndarray,
+    optimal_gel_composition: np.ndarray
 ) -> None:
     """
     Visualize the penalties using a 3D voxel plot and three 2D heatmaps.
@@ -95,43 +154,43 @@ def visualize_penalties(
     visualize_3d_voxels(
         penalties=penalties_3d,
         ax=ax_3d,
+        optimal_gel_composition=optimal_gel_composition
     )
 
-    # Find the minimum penalty location
-    min_idx = np.unravel_index(np.argmin(penalties_3d), penalties_3d.shape)
-    min_a4c_idx, min_a4m_idx, min_ac_disol_idx = min_idx
+    # Convert optimal gel composition to grid indices using centered ranges
+    optimal_a4c_idx, optimal_a4m_idx, optimal_ac_disol_idx = composition_to_grid_indices_centered(optimal_gel_composition, num_points)
 
-    # Get parameter ranges for axis labels
-    a4c_range = create_range(GEL_BOUNDS['Methocel A4C'], num_points)
-    a4m_range = create_range(GEL_BOUNDS['Methocel A4M'], num_points)
-    ac_disol_range = create_range(GEL_BOUNDS['Ac-Di-Sol'], num_points)
+    # Get parameter ranges centered on optimal values (same as used for grid creation)
+    a4c_range = create_range_centered_on_optimal(GEL_BOUNDS['Methocel A4C'], num_points, optimal_gel_composition[0])
+    a4m_range = create_range_centered_on_optimal(GEL_BOUNDS['Methocel A4M'], num_points, optimal_gel_composition[1])
+    ac_disol_range = create_range_centered_on_optimal(GEL_BOUNDS['Ac-Di-Sol'], num_points, optimal_gel_composition[2])
 
-    # Create 2D heatmaps at minimum penalty location
+    # Create 2D heatmaps at optimal gel composition location
 
-    # Subplot (2,2,2): A4M vs A4C plane (fixed Ac-Di-Sol)
+    # Subplot (2,2,2): A4C vs A4M plane (fixed Ac-Di-Sol)
     ax1 = fig.add_subplot(2, 2, 2)
-    plane_a4m_a4c = penalties_3d[:, :, min_ac_disol_idx]
+    plane_a4m_a4c = penalties_3d[:, :, optimal_ac_disol_idx]
 
-    # Create smooth contour data
-    X1, Y1, Z1 = create_smooth_contour_data(plane_a4m_a4c.T, a4c_range, a4m_range)
+    # Create smooth contour data (swapped x and y ranges)
+    X1, Y1, Z1 = create_smooth_contour_data(plane_a4m_a4c, a4m_range, a4c_range)
 
     # Create filled contour plot
     contour1 = ax1.contourf(X1, Y1, Z1, levels=20, cmap='Reds_r', alpha=0.8)
     # Add contour lines for better definition
     ax1.contour(X1, Y1, Z1, levels=20, colors='black', alpha=0.3, linewidths=0.5)
 
-    ax1.set_title(f'A4M vs A4C\n(Ac-Di-Sol = {ac_disol_range[min_ac_disol_idx]:.1f})')
-    ax1.set_xlabel('Methocel A4C')
-    ax1.set_ylabel('Methocel A4M')
+    ax1.set_title(f'A4C vs A4M\n(Ac-Di-Sol = {ac_disol_range[optimal_ac_disol_idx]:.1f})')
+    ax1.set_xlabel('Methocel A4M')
+    ax1.set_ylabel('Methocel A4C')
     plt.colorbar(contour1, ax=ax1, label='Penalty')
 
-    # Mark minimum point
-    ax1.plot(a4c_range[min_a4c_idx], a4m_range[min_a4m_idx], 'b*',
+    # Mark optimal point (swapped coordinates)
+    ax1.plot(a4m_range[optimal_a4m_idx], a4c_range[optimal_a4c_idx], 'b*',
              markersize=15, markeredgecolor='black', markeredgewidth=1)
 
     # Subplot (2,2,3): A4M vs Ac-Di-Sol plane (fixed A4C)
     ax2 = fig.add_subplot(2, 2, 3)
-    plane_a4m_ac_disol = penalties_3d[min_a4c_idx, :, :]
+    plane_a4m_ac_disol = penalties_3d[optimal_a4c_idx, :, :]
 
     # Create smooth contour data
     X2, Y2, Z2 = create_smooth_contour_data(plane_a4m_ac_disol, ac_disol_range, a4m_range)
@@ -141,34 +200,34 @@ def visualize_penalties(
     # Add contour lines for better definition
     ax2.contour(X2, Y2, Z2, levels=20, colors='black', alpha=0.3, linewidths=0.5)
 
-    ax2.set_title(f'A4M vs Ac-Di-Sol\n(A4C = {a4c_range[min_a4c_idx]:.1f})')
+    ax2.set_title(f'A4M vs Ac-Di-Sol\n(A4C = {a4c_range[optimal_a4c_idx]:.1f})')
     ax2.set_xlabel('Ac-Di-Sol')
     ax2.set_ylabel('Methocel A4M')
     plt.colorbar(contour2, ax=ax2, label='Penalty')
 
-    # Mark minimum point
-    ax2.plot(ac_disol_range[min_ac_disol_idx], a4m_range[min_a4m_idx], 'b*',
+    # Mark optimal point
+    ax2.plot(ac_disol_range[optimal_ac_disol_idx], a4m_range[optimal_a4m_idx], 'b*',
              markersize=15, markeredgecolor='black', markeredgewidth=1)
 
     # Subplot (2,2,4): A4C vs Ac-Di-Sol plane (fixed A4M)
     ax3 = fig.add_subplot(2, 2, 4)
-    plane_a4c_ac_disol = penalties_3d[:, min_a4m_idx, :]
+    plane_a4c_ac_disol = penalties_3d[:, optimal_a4m_idx, :]
 
-    # Create smooth contour data
-    X3, Y3, Z3 = create_smooth_contour_data(plane_a4c_ac_disol.T, a4c_range, ac_disol_range)
+    # Create smooth contour data (swapped x and y ranges)
+    X3, Y3, Z3 = create_smooth_contour_data(plane_a4c_ac_disol, ac_disol_range, a4c_range)
 
     # Create filled contour plot
     contour3 = ax3.contourf(X3, Y3, Z3, levels=20, cmap='Reds_r', alpha=0.8)
     # Add contour lines for better definition
     ax3.contour(X3, Y3, Z3, levels=20, colors='black', alpha=0.3, linewidths=0.5)
 
-    ax3.set_title(f'A4C vs Ac-Di-Sol\n(A4M = {a4m_range[min_a4m_idx]:.1f})')
-    ax3.set_xlabel('Methocel A4C')
-    ax3.set_ylabel('Ac-Di-Sol')
+    ax3.set_title(f'A4C vs Ac-Di-Sol\n(A4M = {a4m_range[optimal_a4m_idx]:.1f})')
+    ax3.set_xlabel('Ac-Di-Sol')
+    ax3.set_ylabel('Methocel A4C')
     plt.colorbar(contour3, ax=ax3, label='Penalty')
 
-    # Mark minimum point
-    ax3.plot(a4c_range[min_a4c_idx], ac_disol_range[min_ac_disol_idx], 'b*',
+    # Mark optimal point (swapped coordinates)
+    ax3.plot(ac_disol_range[optimal_ac_disol_idx], a4c_range[optimal_a4c_idx], 'b*',
              markersize=15, markeredgecolor='black', markeredgewidth=1)
 
     plt.tight_layout()
@@ -178,14 +237,14 @@ def visualize_penalties(
 def visualize_3d_voxels(
     penalties: np.ndarray,
     ax: Axes3D,
+    optimal_gel_composition: np.ndarray
 ) -> None:
     """
     Create 3D voxel visualization for a single model's penalties.
 
     Args:
         penalties: 3D array of penalties values
-        pressure_fixed: Fixed pressure value for display
-        speed_fixed: Fixed speed value for display
+        optimal_gel_composition: Array with optimal gel composition values
     """
 
     # Create colors and alpha values
@@ -207,21 +266,21 @@ def visualize_3d_voxels(
     # Create custom tick labels to show actual parameter values
     tick_positions = np.linspace(0, penalties.shape[0] - 1, 5)  # 5 ticks along each axis
 
-    # Get parameter ranges for tick labels
-    a4c_range = create_range(GEL_BOUNDS['Methocel A4C'], penalties.shape[0])
-    a4m_range = create_range(GEL_BOUNDS['Methocel A4M'], penalties.shape[1])
-    ac_disol_range = create_range(GEL_BOUNDS['Ac-Di-Sol'], penalties.shape[2])
+    # Get parameter ranges centered on optimal values for tick labels
+    a4c_range = create_range_centered_on_optimal(GEL_BOUNDS['Methocel A4C'], penalties.shape[0], optimal_gel_composition[0])
+    a4m_range = create_range_centered_on_optimal(GEL_BOUNDS['Methocel A4M'], penalties.shape[1], optimal_gel_composition[1])
+    ac_disol_range = create_range_centered_on_optimal(GEL_BOUNDS['Ac-Di-Sol'], penalties.shape[2], optimal_gel_composition[2])
 
     # Map tick positions to actual parameter values
-    a4c_tick_labels = [f'{val:.1f}' for val in np.linspace(a4c_range[0], a4c_range[-1], 5)]
     a4m_tick_labels = [f'{val:.1f}' for val in np.linspace(a4m_range[0], a4m_range[-1], 5)]
+    a4c_tick_labels = [f'{val:.1f}' for val in np.linspace(a4c_range[0], a4c_range[-1], 5)]
     ac_disol_tick_labels = [f'{val:.1f}' for val in np.linspace(ac_disol_range[0], ac_disol_range[-1], 5)]
 
     ax.set_xticks(tick_positions)
     ax.set_yticks(tick_positions)
     ax.zaxis.set_ticks(tick_positions)
-    ax.set_xticklabels(a4c_tick_labels)
-    ax.set_yticklabels(a4m_tick_labels)
+    ax.set_xticklabels(a4m_tick_labels)
+    ax.set_yticklabels(a4c_tick_labels)
     ax.zaxis.set_ticklabels(ac_disol_tick_labels)
 
     # Create a dummy scatter for colorbar (since voxels doesn't return a mappable)
@@ -229,12 +288,16 @@ def visualize_3d_voxels(
     plt.colorbar(dummy_scatter, ax=ax, label=f'Penalty', shrink=0.6)
 
     # Set labels and title
-    ax.set_xlabel('Methocel A4C')
-    ax.set_ylabel('Methocel A4M')
+    ax.set_xlabel('Methocel A4M')
+    ax.set_ylabel('Methocel A4C')
     ax.set_zlabel('Ac-Di-Sol')
     ax.set_title(
         f'Penalties Visualization\n'
     )
 
-    # Improve the view angle
+    # Add cross marker at optimal gel composition
+    optimal_a4c_idx, optimal_a4m_idx, optimal_ac_disol_idx = composition_to_grid_indices_centered(
+        optimal_gel_composition, penalties.shape[0])
+    ax.scatter(optimal_a4c_idx, optimal_a4m_idx, optimal_ac_disol_idx,
+               color='black', marker='x', s=200, linewidth=3, label='Optimal Composition')    # Improve the view angle
     ax.view_init(elev=20, azim=45)

@@ -31,10 +31,15 @@ def penalty_function(predictions: np.ndarray,
 
 
 def composit_objective_function(best_models: dict[str, list[Model]],
-                                X: np.ndarray,  # 100xn_input
-                                polymer_penalty_weight: float = 0.01
+                                X: np.ndarray,  # 100xn_input or 1xn_input
+                                polymer_penalty_weight: float = 0.01,
+                                leakage_penalty_weight: float = 1.0
                                 ) -> np.ndarray:  # # 100x1, <penalty>
     penalties = {}
+
+    # Ensure X is 2D
+    if X.ndim == 1:
+        X = X.reshape(1, -1)
 
     for target_name, model_list in best_models.items():
         preds = np.mean([model.predict(X, inverse_transform=False) for model in model_list], axis=0)
@@ -43,7 +48,11 @@ def composit_objective_function(best_models: dict[str, list[Model]],
             target=IDEAL_TARGETS[target_name].scaled_target(best_models[target_name][0].y_scaler)
         )
 
-        penalties[target_name] *= IDEAL_TARGETS[target_name].importance
+        # Apply importance weighting
+        if target_name == "Leakage":
+            penalties[target_name] *= IDEAL_TARGETS[target_name].importance * leakage_penalty_weight
+        else:
+            penalties[target_name] *= IDEAL_TARGETS[target_name].importance
 
     total_penalty = np.sum(list(penalties.values()), axis=0)
 

@@ -44,6 +44,7 @@ METADATA_INPUTS: list[str] = [
 # Low-level pure helper functions
 # ---------------------------------------------------------------------------
 
+
 def load_raw_data(data_path: str,
                   drop_metadata: bool = False) -> pd.DataFrame:
     """Read CSV into a DataFrame."""
@@ -60,7 +61,7 @@ def load_raw_data(data_path: str,
     return df
 
 
-def filter_by_dataset_types(df: pd.DataFrame, 
+def filter_by_dataset_types(df: pd.DataFrame,
                             dataset_types: list[str],
                             column_names: list[str]
                             ) -> pd.DataFrame:
@@ -73,10 +74,11 @@ def drop_missing(df: pd.DataFrame) -> pd.DataFrame:
     """Drop rows containing any NA values."""
     return df.dropna().copy()
 
+
 def split_inputs_targets(df: pd.DataFrame,
-                           input_columns: list[str],
-                           target_column: str
-                           ) -> tuple[pd.DataFrame, pd.DataFrame]:
+                         input_columns: list[str],
+                         target_column: str
+                         ) -> tuple[pd.DataFrame, pd.DataFrame]:
     """Return (X, y)"""
     X = df[input_columns].copy()
     y = df[[target_column]].copy()
@@ -126,9 +128,9 @@ class GelDataLoader:
     cache_raw: bool = True
     _raw_df: pd.DataFrame | None = field(default=None, init=False, repr=False)
     input_columns: list[str] = field(default_factory=list, init=False)
-    target_column: str = field(default=..., init=False) # type: ignore
+    target_column: str = field(default=..., init=False)  # type: ignore
     input_scaler: StandardScaler = field(default=StandardScaler(), init=False, repr=False)
-    target_scaler:StandardScaler = field(default=StandardScaler(), init=False, repr=False)
+    target_scaler: StandardScaler = field(default=StandardScaler(), init=False, repr=False)
 
     # -------------------------- Loading & filtering ----------------------- #
     def raw(self) -> pd.DataFrame:
@@ -141,7 +143,7 @@ class GelDataLoader:
              input_columns: list[str],
              target_column: str,
              drop_na_rows: bool = True,
-            ) -> tuple[pd.DataFrame, pd.DataFrame, dict[str, Any]]:
+             ) -> tuple[pd.DataFrame, pd.DataFrame, dict[str, Any]]:
         """Main data assembly pipeline.
 
         Returns
@@ -161,8 +163,6 @@ class GelDataLoader:
             df = drop_missing(df)
 
         X, y = split_inputs_targets(df, input_columns, target_column)
-
-
 
         meta = {
             'input_names': input_columns,
@@ -192,9 +192,9 @@ class GelDataLoader:
     def get_summary(self) -> dict[str, Any]:
         return summarize_dataframe(self.raw())
 
-
     def get_signature(self) -> str:
         return f'{self.dataset_types=}, {self.input_columns=}, {self.target_column=}'
+
 
 __all__ = [
     'GelDataLoader',
